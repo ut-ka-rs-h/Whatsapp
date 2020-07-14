@@ -17,6 +17,8 @@ import com.parse.SaveCallback;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class ChatActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -40,45 +42,59 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, chatsList);
         chatListView.setAdapter(adapter);
 
-        try {
-        ParseQuery<ParseObject> firstUserChatQuery = ParseQuery.getQuery("Chat");
-        ParseQuery<ParseObject> secondUserChatQuery = ParseQuery.getQuery("Chat");
-
-        firstUserChatQuery.whereEqualTo("waSender", ParseUser.getCurrentUser().getUsername());
-        firstUserChatQuery.whereEqualTo("waTargetRecipient", selectedUser);
-
-        secondUserChatQuery.whereEqualTo("waSender", selectedUser);
-        secondUserChatQuery.whereEqualTo("waTargetRecipient", ParseUser.getCurrentUser().getUsername());
-
-        ArrayList<ParseQuery<ParseObject>> allQueries = new ArrayList<>();
-        allQueries.add(firstUserChatQuery);
-        allQueries.add(secondUserChatQuery);
-
-        ParseQuery<ParseObject> myQuery = ParseQuery.or(allQueries);
-        myQuery.orderByAscending("createdAt");
-
-        myQuery.findInBackground(new FindCallback<ParseObject>() {
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
             @Override
-            public void done(List<ParseObject> objects, ParseException e) {
-                if (objects.size() > 0 && e == null){
-                    for (ParseObject chatObject : objects){
-                        String waMessage = chatObject.get("waMessage") + "";
-                        if (chatObject.get("waSender").equals(ParseUser.getCurrentUser().getUsername())){
-                            waMessage = ParseUser.getCurrentUser().getUsername() + " : " + waMessage;
-                        }
-                        if (chatObject.get("waSender").equals(selectedUser)){
-                            waMessage = selectedUser + " : " + waMessage;
-                        }
+            public void run() {
 
-                        chatsList.add(waMessage);
+            try {
+
+            ParseQuery<ParseObject> firstUserChatQuery = ParseQuery.getQuery("Chat");
+            ParseQuery<ParseObject> secondUserChatQuery = ParseQuery.getQuery("Chat");
+
+            firstUserChatQuery.whereEqualTo("waSender", ParseUser.getCurrentUser().getUsername());
+            firstUserChatQuery.whereEqualTo("waTargetRecipient", selectedUser);
+
+            secondUserChatQuery.whereEqualTo("waSender", selectedUser);
+            secondUserChatQuery.whereEqualTo("waTargetRecipient", ParseUser.getCurrentUser().getUsername());
+
+
+
+            ArrayList<ParseQuery<ParseObject>> allQueries = new ArrayList<>();
+            allQueries.add(firstUserChatQuery);
+            allQueries.add(secondUserChatQuery);
+
+
+            ParseQuery<ParseObject> myQuery = ParseQuery.or(allQueries);
+            myQuery.orderByAscending("createdAt");
+
+
+            myQuery.findInBackground(new FindCallback<ParseObject>() {
+                @Override
+                public void done(List<ParseObject> objects, ParseException e) {
+                    if (objects.size() > 0 && e == null){
+                        for (ParseObject chatObject : objects){
+                            String waMessage = chatObject.get("waMessage") + "";
+                            if (chatObject.get("waSender").equals(ParseUser.getCurrentUser().getUsername())){
+                                waMessage = ParseUser.getCurrentUser().getUsername() + " : " + waMessage;
+                            }
+                            if (chatObject.get("waSender").equals(selectedUser)){
+                                waMessage = selectedUser + " : " + waMessage;
+                            }
+
+                            chatsList.add(waMessage);
+                        }
+                        adapter.notifyDataSetChanged();
                     }
-                    adapter.notifyDataSetChanged();
                 }
+            });
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+                chatsList.clear();
+            }
+
+        },0,1000);
 
     }
 
